@@ -1,12 +1,211 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>sebsoong.com</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <title>Seb Soong Terminal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      font-family: 'Fira Code', monospace;
+      background-color: #000;
+      color: #00ff00;
+      overflow: auto;
+    }
+
+    #terminal {
+      max-width: 1000px;
+      line-height: 1.5;
+    }
+
+    .line {
+      white-space: pre-wrap;
+      font-size: 1.5rem;
+      opacity: 0;
+      display: flex;
+    }
+
+    .input-line {
+      display: flex;
+      align-items: center;
+      font-size: 1.5rem;
+      opacity: 0;
+    }
+
+    input {
+      background: none;
+      border: none;
+      color: #00ff00;
+      outline: none;
+      font-family: 'Fira Code', monospace;
+      font-size: 1.5rem;
+      flex: 1;
+    }
+
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      background-color: #00ff00;
+      animation: blink 0.75s step-end infinite;
+      vertical-align: bottom;
+      margin-left: 2px;
+    }
+
+    @keyframes blink {
+      0%, 50%, 100% { opacity: 1; }
+      25%, 75% { opacity: 0; }
+    }
+  </style>
 </head>
 <body>
-  <h1>Hello world</h1>
-  <p>This is my homepage.</p>
+  <div id="terminal">
+    <div class="line" id="line1">sebsoong.com</div>
+    <div class="input-line" id="inputLine">
+      <span>&lt;user&gt; </span><input type="text" id="userInput" autofocus>
+    </div>
+  </div>
+
+  <script>
+    const lines = [
+      document.getElementById('line1')
+    ];
+    const inputLine = document.getElementById('inputLine');
+    const input = document.getElementById('userInput');
+    const terminal = document.getElementById('terminal');
+
+    // blinking cursor for typing animation
+    const cursor = document.createElement('span');
+    cursor.classList.add('cursor');
+    terminal.appendChild(cursor);
+
+    setTimeout(() => {
+      cursor.remove(); // remove before typing starts
+
+      let index = 0;
+
+      function typeLine(line, text, callback) {
+        line.style.opacity = 1;
+        line.textContent = '';
+        line.appendChild(cursor);
+        let i = 0;
+        const interval = setInterval(() => {
+          line.insertBefore(document.createTextNode(text[i]), cursor);
+          i++;
+          if (i >= text.length) {
+            clearInterval(interval);
+            cursor.remove();
+            if (callback) setTimeout(callback, 200);
+          }
+        }, 50);
+      }
+
+      function next() {
+        if (index < lines.length) {
+          typeLine(lines[index], lines[index].textContent, () => {
+            index++;
+            next();
+          });
+        } else {
+          inputLine.style.opacity = 1;
+          input.focus();
+        }
+      }
+
+      next();
+    }, 2000);
+
+    // contact info
+    const contactInfo = {
+      phone: "(+64) 28 8512 8157",
+      email: "sebastien.soong@gmail.com",
+      instagram: "sebastien.soong",
+      discord: ".epo."
+    };
+
+    let contactMode = false;
+    let exited = false;
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' && !exited) {
+        const cmd = input.value.trim().toLowerCase();
+
+        // echo user input
+        const typedLine = document.createElement('div');
+        typedLine.classList.add('line');
+        typedLine.style.opacity = 1;
+        typedLine.textContent = `<user> ${input.value}`;
+        terminal.insertBefore(typedLine, inputLine);
+
+        input.value = '';
+        input.focus();
+
+        if (contactMode) {
+          if (contactInfo[cmd]) {
+            const response = document.createElement('div');
+            response.classList.add('line');
+            response.style.opacity = 1;
+            response.textContent = contactInfo[cmd];
+            terminal.insertBefore(response, inputLine);
+            contactMode = false;
+          } else {
+            const response = document.createElement('div');
+            response.classList.add('line');
+            response.style.opacity = 1;
+            response.textContent = "Error: this social media/contact type is not available. Try phone, email, instagram, or discord.";
+            terminal.insertBefore(response, inputLine);
+          }
+          window.scrollTo(0, document.body.scrollHeight);
+          return;
+        }
+
+        // normal commands
+        switch(cmd) {
+          case 'media':
+            window.location.href = "https://media.sebsoong.com";
+            break;
+          case 'help':
+            const helpLine = document.createElement('div');
+            helpLine.classList.add('line');
+            helpLine.style.opacity = 1;
+            helpLine.textContent = "Available commands: media, help, contact, clear, exit";
+            terminal.insertBefore(helpLine, inputLine);
+            break;
+          case 'contact':
+            contactMode = true;
+            const promptLine = document.createElement('div');
+            promptLine.classList.add('line');
+            promptLine.style.opacity = 1;
+            promptLine.textContent = "Enter the type of contact (phone, email, instagram, discord):";
+            terminal.insertBefore(promptLine, inputLine);
+            break;
+          case 'clear':
+            [...terminal.querySelectorAll('.line')].forEach(line => line.remove());
+            break;
+          case 'exit':
+            const exitLine = document.createElement('div');
+            exitLine.classList.add('line');
+            exitLine.style.opacity = 1;
+            exitLine.textContent = "Session ended. Refresh the page to start again.";
+            terminal.insertBefore(exitLine, inputLine);
+            input.disabled = true;
+            exited = true;
+            break;
+          case '':
+            break;
+          default:
+            const response = document.createElement('div');
+            response.classList.add('line');
+            response.style.opacity = 1;
+            response.textContent = `Command not found: ${cmd}. Type 'help' for available commands.`;
+            terminal.insertBefore(response, inputLine);
+            break;
+        }
+
+        window.scrollTo(0, document.body.scrollHeight);
+      }
+    });
+  </script>
 </body>
 </html>
